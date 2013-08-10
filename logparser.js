@@ -60,10 +60,18 @@ var parseInfo = function(info) {
 };
 
 var parseContent = function(content) {
-	var levels = [{lvl_search: "Information:", lvl: "INFO"},
-		{lvl_search: "Warnung:", lvl: "WARNING"},
-		{lvl_search: "Schwerwiegend:", lvl:"SEVERE"}];
+	var levels = [{
+		lvl_search: "Information:",
+		lvl: "INFO"
+	}, {
+		lvl_search: "Warnung:",
+		lvl: "WARNING"
+	}, {
+		lvl_search: "Schwerwiegend:",
+		lvl: "SEVERE"
+	}];
 
+	var search_idx = -1;
 	var level = _.find(levels, function(level) {
 		search_idx = content.indexOf(level.lvl_search);
 		return search_idx >= 0;
@@ -71,7 +79,10 @@ var parseContent = function(content) {
 
 	content = level ? content.substr(search_idx + level.lvl_search.length + 1) : content;
 	content = content.replace("\r", "");
-	return {level: level && level.lvl, data: content};
+	return {
+		level: level && level.lvl,
+		data: content
+	};
 };
 
 if (Meteor.isServer) {
@@ -124,8 +135,8 @@ if (Meteor.isServer) {
 		});
 	});
 
-	Meteor.publish("log", function(options) {
-		var log_cursor = Log.find({
+	Meteor.publish("log", function(options, offset, limit) {
+		var query = {
 			'when': {
 				'$gte': options.start,
 				'$lte': options.end
@@ -139,9 +150,14 @@ if (Meteor.isServer) {
 					'$in': options.methods || []
 				}
 			}]
-		}, {
-			sort: {when:-1}
+		};
+		var log_cursor = Log.find(query, {
+			//limit: limit,
+			sort: {
+				when: -1
+			}
 		});
+		console.log("change log subscription: ", log_cursor.count(), " -> ", options);
 		return log_cursor;
 	});
 

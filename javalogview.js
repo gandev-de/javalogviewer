@@ -24,18 +24,21 @@ Locations = new Meteor.Collection("locations");
 
 if (Meteor.isClient) {
   var filter_data = {};
+  Session.set("log_page", 0);
+  Session.set("pages_count", 0);
 
   Meteor.subscribe("locations");
 
   Deps.autorun(function() {
-    Session.get("load_log");
+    //Session.get("load_log");
 
     Meteor.subscribe("log", {
       start: filter_data.start_date,
       end: filter_data.end_date,
       classes: filter_data.class_select,
-      methods: filter_data.method_select
-    });
+      methods: filter_data.method_select,
+      reactive: Session.get("load_log") //neccessary because no rerun without something reactive
+    }); //TODO Server side pagination, Session.get("log_page"), 5);
 
     console.log("filter applied: ", new Date(filter_data.start_date),
       new Date(filter_data.end_date),
@@ -43,22 +46,70 @@ if (Meteor.isClient) {
       filter_data.method_select);
   });
 
+  var PAGE_ENTRIES = 20;
+  var pages = [];
+
   Template.log.helpers({
     log: function() {
-      return Log.find();
+
+      var entries = Log.find({}, {
+        sort: {
+          when: -1
+        }
+      }).fetch();
+
+      pages = [];
+      for(var i = 0, p = 1; i < entries.length; i += PAGE_ENTRIES, p++) {
+        var idx = i === 0 ? 1 : i;
+        pages.push(p);
+      }
+      Session.set("pages_count", pages.length);
+
+      var page = Session.get("log_page");
+      var start_idx = (page - 1) * PAGE_ENTRIES;
+      var end_idx = start_idx + PAGE_ENTRIES;
+
+      return entries.slice(start_idx, end_idx);
+    },
+    log_pages: function() {
+      Session.get("pages_count");
+      return pages;
+    },
+    log_page_selected_class: function() {
+      return Session.equals("log_page", +this) ? 'active': '';
     },
     level_class: function() {
       var log_entry = this;
       var level = log_entry.what.level;
-      if(level === "INFO") {
+      if (level === "INFO") {
         return "info";
-      } else if(level === "WARNING") {
+      } else if (level === "WARNING") {
         return "warning";
-      } else if(level === "SEVERE") {
+      } else if (level === "SEVERE") {
         return "error";
       } else {
         return "success";
       }
+    }
+  });
+
+  Template.log.events({
+    'click #log_page_back': function(evt, tmpl) {
+      var pages_count = Session.get("pages_count");
+      var page = Session.get("log_page");
+      if(page > 1) {
+        Session.set("log_page", --page);
+      }
+    },
+    'click #log_page_forward': function(evt, tmpl) {
+      var pages_count = Session.get("pages_count");
+      var page = Session.get("log_page");
+      if(page < pages_count) {
+        Session.set("log_page", ++page);
+      }
+    },
+    'click .log_page': function(evt, tmpl) {
+      Session.set("log_page", +evt.currentTarget.innerHTML);
     }
   });
 
@@ -73,12 +124,6 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.controls.events({
-    'click #load_log': function() {
-      Session.set("load_log", Random.id());
-    }
-  });
-
   Template.controls.rendered = function() {
     var self = Template.controls;
 
@@ -88,6 +133,7 @@ if (Meteor.isClient) {
     });
     pick_start.on('changeDate', function(e) {
       filter_data.start_date = e.localDate.getTime();
+      Session.set("load_log", Random.id());
     });
     var date_start = new Date();
     date_start.setFullYear(date_start.getFullYear() - 1);
@@ -100,6 +146,7 @@ if (Meteor.isClient) {
     });
     pick_end.on('changeDate', function(e) {
       filter_data.end_date = e.localDate.getTime();
+      Session.set("load_log", Random.id());
     });
     var end_date = new Date();
     pick_end.data('datetimepicker').setLocalDate(end_date);
@@ -134,6 +181,7 @@ if (Meteor.isClient) {
             return class_name !== element.val();
           });
         }
+        Session.set("load_log", Random.id());
       }
     });
   };
@@ -166,6 +214,7 @@ if (Meteor.isClient) {
             return class_name !== element.val();
           });
         }
+        Session.set("load_log", Random.id());
       }
     });
   };

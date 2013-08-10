@@ -8,6 +8,17 @@
 </body>
 
 <template name="log">
+
+<div class="pagination">
+  <ul>
+    <li><a id="log_page_back">«</a></li>
+    {{#each log_pages}}
+    <li class="{{log_page_selected_class}}"><a class="log_page">{{this}}</a></li>
+    {{/each}}
+    <li><a id="log_page_forward">»</a></li>
+  </ul>
+</div>
+
 <table class="table">
   <thead>
   	<tr>
@@ -54,7 +65,6 @@
   {{#with methods}}
   	{{> msel}}
   {{/with}}
-  <button id="load_log" type="button" class="btn btn-default">load log</button>
 </div>
 </template>
 
