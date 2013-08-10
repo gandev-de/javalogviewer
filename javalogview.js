@@ -24,7 +24,7 @@ Locations = new Meteor.Collection("locations");
 
 if (Meteor.isClient) {
   var filter_data = {};
-  Session.set("log_page", 0);
+  Session.set("log_page", 1);
   Session.set("pages_count", 0);
 
   Meteor.subscribe("locations");
@@ -124,6 +124,11 @@ if (Meteor.isClient) {
     }
   });
 
+  var load_log = function() {     
+    Session.set("load_log", Random.id());
+    Session.set("log_page", 1);
+  };
+
   Template.controls.rendered = function() {
     var self = Template.controls;
 
@@ -133,7 +138,7 @@ if (Meteor.isClient) {
     });
     pick_start.on('changeDate', function(e) {
       filter_data.start_date = e.localDate.getTime();
-      Session.set("load_log", Random.id());
+      load_log();
     });
     var date_start = new Date();
     date_start.setFullYear(date_start.getFullYear() - 1);
@@ -146,7 +151,7 @@ if (Meteor.isClient) {
     });
     pick_end.on('changeDate', function(e) {
       filter_data.end_date = e.localDate.getTime();
-      Session.set("load_log", Random.id());
+      load_log();
     });
     var end_date = new Date();
     pick_end.data('datetimepicker').setLocalDate(end_date);
@@ -181,7 +186,7 @@ if (Meteor.isClient) {
             return class_name !== element.val();
           });
         }
-        Session.set("load_log", Random.id());
+        load_log();
       }
     });
   };
@@ -214,7 +219,7 @@ if (Meteor.isClient) {
             return class_name !== element.val();
           });
         }
-        Session.set("load_log", Random.id());
+        load_log();
       }
     });
   };
