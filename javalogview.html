@@ -1,0 +1,75 @@
+<head>
+  <title>javalogview</title>
+</head>
+
+<body>
+  {{> controls}}
+  {{> log}}
+</body>
+
+<template name="log">
+<table class="table">
+  <thead>
+  	<tr>
+  		<th style="width: 50px;">When</th>
+  		<th style="width: 300px;">Where</th>
+  		<th>What</th>
+  	</tr>
+  </thead>
+  <tbody>
+  {{#each log}}
+  	<tr class="{{level_class}}">
+  		<td>{{when}}</td>
+  		<td>{{where.clazz}}<br>{{where.method}}</td>
+  		<td>{{#each what.data}} <div>{{this}}</div> {{/each}}</td>
+  	</tr>	
+  {{/each}}
+  </tbody>
+</table>
+</template>
+
+<template name="controls">
+<div class="well">
+  <span class="label">Start</span>
+  <div id="pick_start" class="input-append date">
+    <input data-format="dd/MM/yyyy hh:mm:ss" type="text"></input>
+    <span class="add-on">
+      <i data-time-icon="icon-time" data-date-icon="icon-calendar">
+      </i>
+    </span>
+  </div>
+  <span class="label">End</span>
+  <div id="pick_end" class="input-append date">
+    <input data-format="dd/MM/yyyy hh:mm:ss" type="text"></input>
+    <span class="add-on">
+      <i data-time-icon="icon-time" data-date-icon="icon-calendar">
+      </i>
+    </span>
+  </div>
+  <span class="label">Class</span>
+  {{#with classes}}
+  	{{> csel}}
+  {{/with}}
+  <span class="label">Method</span>
+  {{#with methods}}
+  	{{> msel}}
+  {{/with}}
+  <button id="load_log" type="button" class="btn btn-default">load log</button>
+</div>
+</template>
+
+<template name="csel">
+  <select id="class_sel" class="multiselect" multiple="multiple">
+  	{{#each this}}
+	  <option value="{{this}}">{{this}}</option>
+	{{/each}}
+  </select>
+</template>
+
+<template name="msel">
+  <select id="method_sel" class="multiselect" multiple="multiple">
+  	{{#each this}}
+	  <option value="{{this}}">{{this}}</option>
+	{{/each}}
+  </select>
+</template>

@@ -1,0 +1,172 @@
+Log = new Meteor.Collection("log", {
+  transform: function(doc) {
+    var pad = function(number) {
+      var r = String(number);
+      if (r.length === 1) {
+        r = '0' + r;
+      }
+      return r;
+    };
+
+    var when = new Date(doc.when);
+    doc.when = when.getFullYear() + '.' +
+      (pad(when.getMonth() + 1)) + '.' +
+      pad(when.getDate()) + ' ' +
+      pad(when.getHours()) + ':' +
+      pad(when.getMinutes()) + ':' +
+      pad(when.getSeconds()) + '.' +
+      when.getMilliseconds();
+    return doc;
+  }
+});
+
+Locations = new Meteor.Collection("locations");
+
+if (Meteor.isClient) {
+  var filter_data = {};
+
+  Meteor.subscribe("locations");
+
+  Deps.autorun(function() {
+    Session.get("load_log");
+
+    Meteor.subscribe("log", {
+      start: filter_data.start_date,
+      end: filter_data.end_date,
+      classes: filter_data.class_select,
+      methods: filter_data.method_select
+    });
+
+    console.log("filter applied: ", new Date(filter_data.start_date),
+      new Date(filter_data.end_date),
+      filter_data.class_select,
+      filter_data.method_select);
+  });
+
+  Template.log.helpers({
+    log: function() {
+      return Log.find();
+    },
+    level_class: function() {
+      var log_entry = this;
+      var level = log_entry.what.level;
+      if(level === "INFO") {
+        return "info";
+      } else if(level === "WARNING") {
+        return "warning";
+      } else if(level === "SEVERE") {
+        return "error";
+      } else {
+        return "success";
+      }
+    }
+  });
+
+  Template.controls.helpers({
+    classes: function() {
+      var locations = Locations.findOne() || {};
+      return locations.classes || [];
+    },
+    methods: function() {
+      var locations = Locations.findOne() || {};
+      return locations.methods || [];
+    }
+  });
+
+  Template.controls.events({
+    'click #load_log': function() {
+      Session.set("load_log", Random.id());
+    }
+  });
+
+  Template.controls.rendered = function() {
+    var self = Template.controls;
+
+    var pick_start = $('#pick_start').datetimepicker({
+      language: 'en',
+      pick12HourFormat: false
+    });
+    pick_start.on('changeDate', function(e) {
+      filter_data.start_date = e.localDate.getTime();
+    });
+    var date_start = new Date();
+    date_start.setFullYear(date_start.getFullYear() - 1);
+    pick_start.data("datetimepicker").setLocalDate(date_start);
+    filter_data.start_date = date_start.getTime();
+
+    var pick_end = $('#pick_end').datetimepicker({
+      language: 'en',
+      pick12HourFormat: false
+    });
+    pick_end.on('changeDate', function(e) {
+      filter_data.end_date = e.localDate.getTime();
+    });
+    var end_date = new Date();
+    pick_end.data('datetimepicker').setLocalDate(end_date);
+    filter_data.end_date = end_date.getTime();
+  };
+
+  Template.csel.rendered = function() {
+    $('#class_sel').multiselect({
+      buttonClass: 'btn',
+      buttonWidth: 'auto',
+      buttonContainer: '<div class="btn-group" />',
+      maxHeight: false,
+      buttonText: function(options) {
+        if (options.length === 0) {
+          return 'None selected <b class="caret"></b>';
+        } else if (options.length > 3) {
+          return options.length + ' selected  <b class="caret"></b>';
+        } else {
+          var selected = '';
+          options.each(function() {
+            selected += $(this).text() + ', ';
+          });
+          return selected.substr(0, selected.length - 2) + ' <b class="caret"></b>';
+        }
+      },
+      onChange: function(element, checked) {
+        if (checked === true) {
+          filter_data.class_select = filter_data.class_select || [];
+          filter_data.class_select.push(element.val());
+        } else if (checked === false) {
+          filter_data.class_select = _.filter(filter_data.class_select, function(class_name) {
+            return class_name !== element.val();
+          });
+        }
+      }
+    });
+  };
+
+  Template.msel.rendered = function() {
+    $('#method_sel').multiselect({
+      buttonClass: 'btn',
+      buttonWidth: 'auto',
+      buttonContainer: '<div class="btn-group" />',
+      maxHeight: false,
+      buttonText: function(options) {
+        if (options.length === 0) {
+          return 'None selected <b class="caret"></b>';
+        } else if (options.length > 3) {
+          return options.length + ' selected  <b class="caret"></b>';
+        } else {
+          var selected = '';
+          options.each(function() {
+            selected += $(this).text() + ', ';
+          });
+          return selected.substr(0, selected.length - 2) + ' <b class="caret"></b>';
+        }
+      },
+      onChange: function(element, checked) {
+        if (checked === true) {
+          filter_data.method_select = filter_data.method_select || [];
+          filter_data.method_select.push(element.val());
+        } else if (checked === false) {
+          filter_data.method_select = _.filter(filter_data.method_select, function(class_name) {
+            return class_name !== element.val();
+          });
+        }
+      }
+    });
+  };
+}
